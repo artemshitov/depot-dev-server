@@ -36,8 +36,6 @@ run = (directory = process.cwd(), port = process.env.PORT || 3030) ->
         ]
       , extensions[blockFile.extension]
 
-      console.log filePaths
-
       File.existsAlternative filePaths
         .then (filePath) ->
           if filePath?
