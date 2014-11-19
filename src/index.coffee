@@ -12,8 +12,6 @@ util      = require './lib/util'
 
 run = (directory = process.cwd(), port = process.env.PORT || 3030) ->
   app = express()
-  app.use express.static(directory)
-
   cache = {}
 
   app.get '/.build/blocks.*/*/*/*', (req, res) ->
@@ -64,6 +62,8 @@ run = (directory = process.cwd(), port = process.env.PORT || 3030) ->
           res.type(cacheEntry.type).send(cacheEntry.content)
     else
       recompile()
+
+  app.use express.static(directory)
 
   app.listen port
   console.log "Listening on port #{port}"
