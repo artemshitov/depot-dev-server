@@ -29,7 +29,7 @@ class Compiler
 less = do ->
   lessOptions = (platform, filePath) ->
     paths: [
-      path.join(process.cwd(), 'const', platform)
+      path.join(path.resolve(filePath, '../../../../'), 'const', platform)
       path.dirname filePath
     ]
     filename: filePath
