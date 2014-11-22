@@ -34,20 +34,20 @@ run = (directory = process.cwd(), port = process.env.PORT || 3030) ->
         ]
       , extensions[blockFile.extension]
 
-      File.existsAlternative filePaths
+      File.existsAny filePaths
         .then (filePath) ->
-          if filePath?
-            compiler = extCompilers[path.extname(filePath)[1..]]
-            type = blockFile.extension
-            Compilers[compiler].run(blockFile.platform, filePath)
-              .then (result) ->
-                cache[req.path] = Fn.merge result, {type}
-                res.type(type).send result.content
-              .catch (err) ->
-                console.error err
-                res.status(500).send('Error: ' + err.message)
-          else
-            res.status(404).end()
+          compiler = extCompilers[path.extname(filePath)[1..]]
+          type = blockFile.extension
+          Compilers[compiler].run(blockFile.platform, filePath)
+            .then (result) ->
+              cache[req.path] = Fn.merge result, {type}
+              res.type(type).send result.content
+            .catch (err) ->
+              console.error err
+              res.status(500).send('Error: ' + err.message)
+        .catch (err) ->
+          console.log err
+          res.status(404).end()
 
     cacheEntry = cache[req.path]
     if cacheEntry?
