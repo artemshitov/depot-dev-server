@@ -6,6 +6,7 @@ Promise    = require 'bluebird'
 mdeps      = require 'module-deps'
 collect    = require 'collect-stream'
 coffeeify  = require 'coffeeify'
+through    = require 'through'
 
 Block = require './block'
 File  = require './file'
@@ -51,14 +52,22 @@ less = do ->
 
 
 js = do ->
+  include2require = ->
+    buffer = ''
+    write  = (data) -> buffer += data
+    end    = ->
+      @queue buffer.replace(/\/\/= include (.+)/g, 'require(\'./$1\');')
+      @queue null
+    through write, end
+
   jsCompile = (platform, filePath) ->
     new Promise (resolve, reject) ->
-      browserify().transform(coffeeify).add(filePath).bundle (err, data) ->
+      browserify().transform(coffeeify).transform(include2require).add(filePath).bundle (err, data) ->
         if err? then reject err
         else resolve data.toString 'utf-8'
 
   jsDependencies = (platform, filePath) ->
-    md = mdeps()
+    md = mdeps(transform: [coffeeify, include2require])
     md.end filePath
     Promise.promisify(collect)(md)
       .then (deps) ->
