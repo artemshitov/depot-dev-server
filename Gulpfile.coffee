@@ -20,7 +20,7 @@ gulp.task 'bin', ->
     .pipe gulp.dest 'build/bin'
 
 gulp.task 'clean', (cb) ->
-  del ['build'], cb
+  del ['build']
 
 gulp.task 'build', ['coffee', 'bin']
 
