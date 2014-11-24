@@ -11,7 +11,15 @@ ctime = (filePath) ->
       stats.ctime.getTime()
 
 existsAny = (filePaths) ->
-  Promise.any(filePaths.map(fsExists))
+  Promise.map filePaths, (filePath) ->
+    fsExists filePath
+      .then (exists) ->
+        [filePath, exists]
+  .then (results) ->
+    util.findFirst (([filePath, exists]) -> exists), results
+  .then (result) ->
+    if result? then result[0]
+    else undefined
 
 module.exports = {
   ctime
