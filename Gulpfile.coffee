@@ -2,6 +2,7 @@ gulp = require 'gulp'
 coffee = require 'gulp-coffee'
 chmod = require 'gulp-chmod'
 mapStream = require 'map-stream'
+del = require 'del'
 
 gulp.task 'coffee', ->
   gulp.src ['src/**/*.coffee', '!src/bin/**/*.coffee']
@@ -18,7 +19,12 @@ gulp.task 'bin', ->
     .pipe chmod(755)
     .pipe gulp.dest 'build/bin'
 
+gulp.task 'clean', (cb) ->
+  del ['build'], cb
+
 gulp.task 'build', ['coffee', 'bin']
+
+gulp.task 'prepublish', ['clean', 'build']
 
 gulp.task 'watch', ['build'], ->
   gulp.watch 'src/**/*.*', ['build']
