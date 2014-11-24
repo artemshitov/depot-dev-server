@@ -52,19 +52,30 @@ less = do ->
 
 
 js = do ->
-  include2require = ->
+  transformer = (f) -> () ->
     buffer = ''
     write  = (data) -> buffer += data
     end    = ->
-      @queue buffer.replace(/\/\/= include (.+)/g, 'require(\'./$1\');')
+      @queue f(buffer)
       @queue null
     through write, end
 
+  include2require = transformer (js) ->
+    js.replace /\/\/= include (.+)/g, 'require(\'./$1\');'
+
+  imagePaths = (filePath) -> transformer (js) ->
+    js.replace /(['"])url\((?!\/)([^'"]+)\)/g,
+      "$1url(/#{path.relative(path.resolve(filePath, '../../../..'), path.resolve(filePath, '..'))}/$2)"
+
   jsCompile = (platform, filePath) ->
     new Promise (resolve, reject) ->
-      browserify().transform(coffeeify).transform(include2require).add(filePath).bundle (err, data) ->
-        if err? then reject err
-        else resolve data.toString 'utf-8'
+      browserify()
+        .transform(coffeeify)
+        .transform(include2require)
+        .transform(imagePaths(filePath))
+        .add(filePath).bundle (err, data) ->
+          if err? then reject err
+          else resolve data.toString 'utf-8'
 
   jsDependencies = (platform, filePath) ->
     md = mdeps(transform: [coffeeify, include2require])
