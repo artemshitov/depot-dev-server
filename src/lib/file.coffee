@@ -1,7 +1,7 @@
 fs = require 'fs'
 Promise = require 'bluebird'
+R = require 'ramda'
 
-util = require './util'
 fsExists = require './fs-exists'
 
 
@@ -16,7 +16,7 @@ existsAny = (filePaths) ->
       .then (exists) ->
         [filePath, exists]
   .then (results) ->
-    util.findFirst (([filePath, exists]) -> exists), results
+    R.find (([filePath, exists]) -> exists), results
   .then (result) ->
     if result? then result[0]
     else undefined

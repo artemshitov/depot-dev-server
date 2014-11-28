@@ -2,12 +2,11 @@ path      = require 'path'
 
 express   = require 'express'
 Promise   = require 'bluebird'
-Fn        = require 'fn.js'
+R         = require 'ramda'
 
 Block     = require './lib/block'
 Compilers = require './lib/compilers'
 File      = require './lib/file'
-util      = require './lib/util'
 
 
 run = (directory = process.cwd(), port = process.env.PORT || 3030) ->
@@ -27,7 +26,7 @@ run = (directory = process.cwd(), port = process.env.PORT || 3030) ->
 
       blockFile = Block.BlockFile.fromPath(req.path)
 
-      filePaths = util.flatMap (ext) ->
+      filePaths = R.compose(R.flatten, R.map) (ext) ->
         [
           path.join(directory, blockFile.changeExtension(ext).toPath())
           path.join(directory, blockFile.changeExtension(ext).changePlatform('').toPath())
@@ -40,7 +39,7 @@ run = (directory = process.cwd(), port = process.env.PORT || 3030) ->
           type = blockFile.extension
           Compilers[compiler].run(blockFile.platform, filePath)
             .then (result) ->
-              cache[req.path] = Fn.merge result, {type}
+              cache[req.path] = R.mixin result, {type}
               res.type(type).send result.content
             .catch (err) ->
               console.error err
@@ -56,7 +55,7 @@ run = (directory = process.cwd(), port = process.env.PORT || 3030) ->
           .then (ctime) ->
             ctime > dep.ctime
       .then (results) ->
-        if util.any util.id, results
+        if R.some R.identity, results
           recompile()
         else
           res.type(cacheEntry.type).send(cacheEntry.content)
