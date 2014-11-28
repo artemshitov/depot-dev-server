@@ -26,10 +26,10 @@
     "coffeeify": "^1.0.0",
     "collect-stream": "^1.0.0",
     "express": "^4.10.2",
-    "fn.js": "^0.8.1",
     "less": "^1.7.3",
     "minimist": "^1.1.0",
     "module-deps": "^3.5.6",
+    "ramda": "^0.8.0",
     "through": "^2.3.6"
   },
   "devDependencies": {
