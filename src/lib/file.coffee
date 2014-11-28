@@ -2,8 +2,10 @@ fs = require 'fs'
 Promise = require 'bluebird'
 R = require 'ramda'
 
-fsExists = require './fs-exists'
-
+fsExists = (filePath) ->
+  new Promise (resolve, reject) ->
+    fs.exists filePath, (exists) ->
+      resolve exists
 
 ctime = (filePath) ->
   Promise.promisify(fs.stat)(filePath)
