@@ -4,24 +4,19 @@ R = require 'ramda'
 
 fsExists = (filePath) ->
   new Promise (resolve, reject) ->
-    fs.exists filePath, (exists) ->
-      resolve exists
+    fs.exists filePath, resolve
 
-ctime = (filePath) ->
-  Promise.promisify(fs.stat)(filePath)
-    .then (stats) ->
-      stats.ctime.getTime()
+fsStat = Promise.promisify fs.stat
+
+ctime = R.pPipe fsStat, R.prop('ctime'), R.func('getTime')
 
 existsAny = (filePaths) ->
-  Promise.map filePaths, (filePath) ->
-    fsExists filePath
-      .then (exists) ->
-        [filePath, exists]
-  .then (results) ->
-    R.find (([filePath, exists]) -> exists), results
-  .then (result) ->
-    if result? then result[0]
-    else undefined
+  if filePaths.length == 0
+    Promise.resolve undefined
+  else
+    fsExists(filePaths[0]).then (exists) ->
+      if exists then filePaths[0]
+      else existsAny filePaths[1..]
 
 module.exports = {
   ctime
