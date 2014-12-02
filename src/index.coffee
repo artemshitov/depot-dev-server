@@ -66,8 +66,3 @@ createServer = (directory) ->
 module.exports = {
   createServer
 }
-
-
-module.exports = {
-  createServer
-}
