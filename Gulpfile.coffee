@@ -9,6 +9,10 @@ gulp.task 'coffee', ->
     .pipe coffee bare: true
     .pipe gulp.dest 'build'
 
+gulp.task 'templates', ->
+  gulp.src ['src/templates/**/*.*']
+    .pipe gulp.dest 'build/templates'
+
 gulp.task 'bin', ->
   gulp.src 'src/bin/**/*.coffee'
     .pipe coffee bare: true
@@ -22,7 +26,7 @@ gulp.task 'bin', ->
 gulp.task 'clean', (cb) ->
   del ['build']
 
-gulp.task 'build', ['coffee', 'bin']
+gulp.task 'build', ['coffee', 'bin', 'templates']
 
 gulp.task 'prepublish', ['clean', 'build']
 

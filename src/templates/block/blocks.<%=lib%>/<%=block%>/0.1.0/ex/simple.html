@@ -1,0 +1,21 @@
+<meta charset="utf8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<meta name="format-detection" content="telephone=no"/>
+<script src="/.jbuilder/si-0.3.1.js"></script>
+<script>
+	SI.render({
+		libs: {
+			autospec: "0.2.0",
+			common:   "0.1.0",
+			serp:	 "0.1.0"
+		},
+		blocks: {
+			"<%= lib %>.<%= block %>": "0.1.0"
+		}
+})
+</script>
+
+<b:page m:ex>
+	<b:<%= block %>>
+	</b:<%= block %>>
+</b:page>
