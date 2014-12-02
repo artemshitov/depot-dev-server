@@ -7,11 +7,12 @@ R         = require 'ramda'
 Block     = require './block'
 Compilers = require './compilers'
 File      = require './file'
+Cache     = require './cache'
 
 
 createServer = (directory) ->
   app = express()
-  cache = {}
+  cache = new Cache()
 
   app.get '/.build/blocks.*/*/*/*', (req, res) ->
     extensions =
@@ -39,7 +40,7 @@ createServer = (directory) ->
           type = blockFile.extension
           Compilers[compiler].run(blockFile.platform, filePath)
             .then (result) ->
-              cache[req.path] = R.mixin result, {type}
+              cache.update(req.path, new Cache.Entry(type, result.content, result.dependencies))
               res.type(type).send result.content
             .catch (err) ->
               console.error err
@@ -48,15 +49,13 @@ createServer = (directory) ->
           console.log err
           res.status(404).end()
 
-    cacheEntry = cache[req.path]
-    if cacheEntry?
-      Promise.map cacheEntry.dependencies, (dep) ->
-        R.pCompose(R.lt(dep.ctime), File.ctime)(dep.path)
-      .then (results) ->
-        if R.some R.identity, results
-          recompile()
+    if cache.has(req.path)
+      cacheEntry = cache.get(req.path)
+      cacheEntry.isValid().then (valid) ->
+        if valid
+          res.type(cacheEntry.mime).send(cacheEntry.content)
         else
-          res.type(cacheEntry.type).send(cacheEntry.content)
+          recompile()
     else
       recompile()
 
