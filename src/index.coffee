@@ -5,6 +5,7 @@ Promise   = require 'bluebird'
 R         = require 'ramda'
 
 mime      = require './lib/mime'
+api       = require './lib/api'
 
 Block     = require './lib/block'
 Compilers = require './lib/compilers'
@@ -15,6 +16,9 @@ Cache     = require './lib/cache'
 createServer = (directory) ->
   app = express()
   cache = new Cache()
+  apiApp = api(directory)
+
+  app.use '/api/beta', apiApp
 
   app.get '/.build/blocks.*/*/*/*', (req, res) ->
     extensions =
