@@ -23,8 +23,8 @@ gulp.task 'bin', ->
     .pipe chmod(755)
     .pipe gulp.dest 'build/bin'
 
-gulp.task 'clean', (cb) ->
-  del ['build']
+gulp.task 'clean', ->
+  del.sync ['build']
 
 gulp.task 'build', ['coffee', 'bin', 'templates']
 
