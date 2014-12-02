@@ -18,7 +18,7 @@ class Cache
     this
 
 class Entry
-  constructor: (@mime, @content, @files) ->
+  constructor: (@content, @files) ->
 
   isValid: ->
     Promise.map @files, ({ctime, path}) ->

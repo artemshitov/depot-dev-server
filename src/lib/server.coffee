@@ -4,6 +4,8 @@ express   = require 'express'
 Promise   = require 'bluebird'
 R         = require 'ramda'
 
+mime      = require './mime'
+
 Block     = require './block'
 Compilers = require './compilers'
 File      = require './file'
@@ -37,11 +39,10 @@ createServer = (directory) ->
       File.existsAny filePaths
         .then (filePath) ->
           compiler = extCompilers[path.extname(filePath)[1..]]
-          type = blockFile.extension
           Compilers[compiler].run(blockFile.platform, filePath)
             .then (result) ->
-              cache.update(req.path, new Cache.Entry(type, result.content, result.dependencies))
-              res.type(type).send result.content
+              cache.update(req.path, new Cache.Entry(result.content, result.dependencies))
+              res.type(mime(req.path)).send result.content
             .catch (err) ->
               console.error err
               res.status(500).send('Error: ' + err.message)
@@ -53,7 +54,7 @@ createServer = (directory) ->
       cacheEntry = cache.get(req.path)
       cacheEntry.isValid().then (valid) ->
         if valid
-          res.type(cacheEntry.mime).send(cacheEntry.content)
+          res.type(mime(req.path)).send(cacheEntry.content)
         else
           recompile()
     else
