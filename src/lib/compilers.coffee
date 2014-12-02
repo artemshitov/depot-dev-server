@@ -68,7 +68,9 @@ js = do ->
   jsCompile = (platform, filePath) ->
     new Promise (resolve, reject) ->
       browserify()
-        .transform(coffeeify, include2require, imagePaths(filePath))
+        .transform(coffeeify)
+        .transform(include2require)
+        .transform(imagePaths(filePath))
         .add(filePath)
         .bundle (err, data) ->
           if err? then reject err
