@@ -40,9 +40,9 @@ createServer = (directory) ->
         .then (filePath) ->
           compiler = extCompilers[path.extname(filePath)[1..]]
           Compilers[compiler].run(blockFile.platform, filePath)
-            .then (result) ->
-              cache.update(req.path, new Cache.Entry(result.content, result.dependencies))
-              res.type(mime(req.path)).send result.content
+            .then ({content, files}) ->
+              cache.update(req.path, new Cache.Entry(content, files))
+              res.type(mime(req.path)).send content
             .catch (err) ->
               console.error err
               res.status(500).send('Error: ' + err.message)

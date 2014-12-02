@@ -23,7 +23,7 @@ class Compiler
         File.ctime(path).then (ctime) ->
           path:  path
           ctime: ctime
-    ]).then R.zipObj(['content', 'dependencies'])
+    ]).then R.zipObj(['content', 'files'])
 
 less = do ->
   lessRender = Promise.promisify(lessc.render)
