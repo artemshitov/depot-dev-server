@@ -6,7 +6,7 @@ fsExists = require './fs-exists'
 
 fsStat = Promise.promisify fs.stat
 
-ctime = R.pPipe fsStat, R.prop('ctime'), R.func('getTime')
+mtime = R.pPipe fsStat, R.prop('mtime'), R.func('getTime')
 
 existsAny = (filePaths) ->
   if filePaths.length == 0
@@ -17,6 +17,6 @@ existsAny = (filePaths) ->
       else existsAny filePaths[1..]
 
 module.exports = {
-  ctime
+  mtime
   existsAny
 }

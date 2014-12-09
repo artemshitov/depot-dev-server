@@ -20,9 +20,9 @@ class Compiler
     Promise.all([
       R.apply(@compileFn, arguments),
       R.apply(@depsFn, arguments).map (path) ->
-        File.ctime(path).then (ctime) ->
+        File.mtime(path).then (mtime) ->
           path:  path
-          ctime: ctime
+          mtime: mtime
     ]).then R.zipObj(['content', 'files'])
 
 less = do ->

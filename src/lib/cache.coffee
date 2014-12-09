@@ -21,8 +21,8 @@ class Entry
   constructor: (@content, @files) ->
 
   isValid: ->
-    Promise.map @files, ({ctime, path}) ->
-      R.pPipe(File.ctime, R.eq(ctime))(path)
+    Promise.map @files, ({mtime, path}) ->
+      R.pPipe(File.mtime, R.eq(mtime))(path)
     .then R.every R.I
 
 Cache.Entry = Entry
