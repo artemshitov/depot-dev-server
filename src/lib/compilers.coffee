@@ -30,8 +30,14 @@ less = do ->
 
   lessOptions = (platform, filePath) ->
     paths: [
-      path.join(path.resolve(filePath, '../../../../'), 'const', platform)
+      # version directory
       path.dirname filePath
+
+      # library config directory
+      path.join(path.resolve(filePath, '../../../'), 'const', platform)
+
+      # project config directory
+      path.join(path.resolve(filePath, '../../../../'), 'const', platform)
     ]
     filename: filePath
 
