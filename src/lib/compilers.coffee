@@ -73,7 +73,7 @@ js = do ->
 
   jsCompile = (platform, filePath) ->
     new Promise (resolve, reject) ->
-      browserify()
+      browserify(debug: true) # source maps enabled
         .transform(coffeeify)
         .transform(include2require)
         .transform(imagePaths(filePath))
