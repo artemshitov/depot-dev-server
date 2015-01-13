@@ -29,6 +29,8 @@ less = do ->
   lessRender = Promise.promisify(lessc.render)
 
   lessOptions = (platform, filePath) ->
+    sourceMap:
+      sourceMapFileInline: true
     paths: [
       # version directory
       path.dirname filePath
