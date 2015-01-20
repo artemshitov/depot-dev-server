@@ -6,12 +6,12 @@ _       = require 'underscore'
 R       = require 'ramda'
 Promise = require 'bluebird'
 
-fsExists = require './fs-exists'
+File = require './file'
 
 createBlock = (lib, block, dir) ->
   new Promise (resolve, reject) ->
     # Check if the block already exists
-    fsExists path.resolve(dir, 'blocks.' + lib, block)
+    File.exists path.resolve(dir, 'blocks.' + lib, block)
       .then (exists) ->
         if exists
           reject new Error('This block already exists')
