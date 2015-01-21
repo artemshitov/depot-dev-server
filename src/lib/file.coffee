@@ -6,9 +6,21 @@ fsStat = Promise.promisify fs.stat
 
 mtime = R.pPipe fsStat, R.prop('mtime'), R.func('getTime')
 
+findP = (f) -> (xs) ->
+  Promise
+    .map(xs, f)
+    .then R.zipWith((source, result) -> result && source)(xs)
+    .then R.find(R.I)
+
 exists = (filePath) ->
   new Promise (resolve, reject) ->
     fs.exists filePath, resolve
+
+withFirstExistent = (f) -> (filePaths) ->
+  findP(exists)(filePaths)
+    .then (result) ->
+      if result? then f(result)
+      else throw new Error('None of the paths tried exist:\n' + filePaths.join(',\n'))
 
 existsAny = (filePaths) ->
   if filePaths.length == 0
@@ -22,4 +34,5 @@ module.exports = {
   mtime
   exists
   existsAny
+  withFirstExistent
 }
