@@ -40,19 +40,20 @@ createServer = (directory) ->
         ]
       , extensions[blockFile.extension]
 
-      File.existsAny filePaths
-        .then (filePath) ->
-          compiler = extCompilers[path.extname(filePath)[1..]]
-          Compilers[compiler].run(blockFile.platform, filePath)
-            .then ({content, files}) ->
-              cache.update(req.path, new Cache.Entry(content, files))
-              res.type(mime(req.path)).send content
-            .catch (err) ->
-              console.error err
-              res.status(500).send('Error: ' + err.message)
+      compileFile = (filePath) ->
+        compiler = extCompilers[path.extname(filePath)[1..]]
+        Compilers[compiler].run(blockFile.platform, filePath)
+          .then ({content, files}) ->
+            cache.update(req.path, new Cache.Entry(content, files))
+            res.type(mime(req.path)).send content
+          .catch (err) ->
+            console.error err
+            res.status(500).send('Error: ' + err.message)
+
+      File.withFirstExistent(compileFile)(filePaths)
         .catch (err) ->
           console.log err
-          res.status(404).end()
+          res.status(404).send(err.message)
 
     if cache.has(req.path)
       cacheEntry = cache.get(req.path)
