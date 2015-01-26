@@ -91,8 +91,8 @@ module.exports = (directory) ->
 
 
   app.post '/libraries/:lib/blocks', (req, res) ->
-    {lib, block, purpose, title, ver, owner} = req.body
-    createBlock lib, block, title, ver, purpose, owner, directory
+    blockConfig = R.pick(['lib', 'block', 'purpose', 'title', 'ver', 'owner'], req.body)
+    createBlock directory, blockConfig
       .then (data) ->
         res.status(201).json(data)
       .catch (err) ->
