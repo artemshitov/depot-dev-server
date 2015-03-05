@@ -8,6 +8,7 @@ collect    = Promise.promisify(require 'collect-stream')
 coffeeify  = require 'coffeeify'
 through    = require 'through'
 R          = require 'ramda'
+autoprefixer  = require 'autoprefixer-core'
 
 Block = require './block'
 File  = require './file'
@@ -45,7 +46,8 @@ less = do ->
 
   lessCompile = (platform, filePath) ->
     render = R.rPartial(lessRender, lessOptions(platform, filePath))
-    readFile(filePath, encoding: 'utf-8').then(render)
+    prefix = (css) -> autoprefixer.process(css).css
+    readFile(filePath, encoding: 'utf-8').then(render).then(prefix)
 
   lessDependencies = (platform, filePath) ->
     parser = new lessc.Parser(lessOptions(platform, filePath))
