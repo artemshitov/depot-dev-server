@@ -28,3 +28,6 @@ node_modules
 .lock-wscript
 
 build
+
+# Vim temp files
+*.swp
