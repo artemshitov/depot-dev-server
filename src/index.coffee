@@ -30,6 +30,16 @@ createServer = (directory) ->
       js: 'js'
       less: 'less'
 
+    # Substitution feature
+    #
+    # The server may substitute strings in the source file prior to compilation
+    # if query parameter `substitute` is present. It is useful for experimenting with
+    # global design constants
+    # Format: ...?substitute=/0.1.0/0.2.0/
+    if req.query.substitute?
+        [from, to] = req.query.substitute[1...-1].split('/')
+        substitute = {from, to}
+
     recompile = ->
       blockFile = Block.BlockFile.fromPath(req.path)
 
@@ -42,7 +52,7 @@ createServer = (directory) ->
 
       compileFile = (filePath) ->
         compiler = extCompilers[path.extname(filePath)[1..]]
-        Compilers[compiler].run(blockFile.platform, filePath)
+        Compilers[compiler].run(blockFile.platform, filePath, substitute)
           .then ({content, files}) ->
             cache.update(req.path, new Cache.Entry(content, files))
             res.type(mime(req.path)).send content

@@ -15,6 +15,14 @@ File  = require './file'
 
 readFile = Promise.promisify fs.readFile
 
+substitute = (sub) -> (str) ->
+    if sub?
+        regexp = new RegExp(sub.from, 'g')
+        str.replace(regexp, sub.to)
+    else
+        str
+
+
 class Compiler
   constructor: (@compileFn, @depsFn) ->
   run: ->
@@ -44,10 +52,10 @@ less = do ->
     ]
     filename: filePath
 
-  lessCompile = (platform, filePath) ->
+  lessCompile = (platform, filePath, sub) ->
     render = R.rPartial(lessRender, lessOptions(platform, filePath))
     prefix = (css) -> autoprefixer.process(css).css
-    readFile(filePath, encoding: 'utf-8').then(render).then(prefix)
+    readFile(filePath, encoding: 'utf-8').then(substitute(sub)).then(render).then(prefix)
 
   lessDependencies = (platform, filePath) ->
     parser = new lessc.Parser(lessOptions(platform, filePath))
@@ -75,9 +83,10 @@ js = do ->
     relPath = path.relative(blockPath, path.resolve(filePath, '..'))
     js.replace /(['"])url\((?!\/)([^'"]+)\)/g, "$1url(/#{relPath}/$2)"
 
-  jsCompile = (platform, filePath) ->
+  jsCompile = (platform, filePath, sub) ->
     new Promise (resolve, reject) ->
       browserify(debug: true) # source maps enabled
+        .transform(transformer(substitute(sub)))
         .transform(coffeeify)
         .transform(include2require)
         .transform(imagePaths(filePath))
