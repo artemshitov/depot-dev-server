@@ -54,7 +54,7 @@ createServer = (directory) ->
         compiler = extCompilers[path.extname(filePath)[1..]]
         Compilers[compiler].run(blockFile.platform, filePath, substitute)
           .then ({content, files}) ->
-            cache.update(req.path, new Cache.Entry(content, files))
+            cache.update(req.originalUrl, new Cache.Entry(content, files))
             res.type(mime(req.path)).send content
           .catch (err) ->
             console.error err
@@ -65,8 +65,8 @@ createServer = (directory) ->
           console.log err
           res.status(404).send(err.message)
 
-    if cache.has(req.path)
-      cacheEntry = cache.get(req.path)
+    if cache.has(req.originalUrl)
+      cacheEntry = cache.get(req.originalUrl)
       cacheEntry.isValid().then (valid) ->
         if valid
           res.type(mime(req.path)).send(cacheEntry.content)
