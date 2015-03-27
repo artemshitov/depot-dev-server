@@ -21,6 +21,11 @@ createServer = (directory) ->
   app.use '/api/beta', apiApp
 
   app.get '/.build/blocks.*/*/*/*', (req, res) ->
+    # This is made for relative paths in CSS to work
+    if !R.contains(path.extname(req.path), ['.css', '.js'])
+      withoutBuild = '/' + req.path.split(path.sep)[2..].join(path.sep)
+      res.redirect(withoutBuild)
+
     extensions =
       css: ['less']
       js: ['coffee', 'js']
