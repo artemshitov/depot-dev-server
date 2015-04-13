@@ -25,6 +25,7 @@ createServer = (directory) ->
     if !R.contains(path.extname(req.path), ['.css', '.js'])
       withoutBuild = '/' + req.path.split(path.sep)[2..].join(path.sep)
       res.redirect(withoutBuild)
+      return null
 
     extensions =
       css: ['less']
