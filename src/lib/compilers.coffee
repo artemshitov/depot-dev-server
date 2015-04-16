@@ -5,7 +5,6 @@ browserify = require 'browserify'
 Promise    = require 'bluebird'
 mdeps      = require 'module-deps'
 collect    = Promise.promisify(require 'collect-stream')
-coffeeify  = require 'coffeeify'
 through    = require 'through'
 R          = require 'ramda'
 autoprefixer  = require 'autoprefixer-core'
@@ -51,6 +50,7 @@ less = do ->
       path.join(path.resolve(filePath, '../../../../'), 'const', platform)
     ]
     filename: filePath
+    ieCompat: false
 
   lessCompile = (platform, filePath, sub) ->
     render = R.rPartial(lessRender, lessOptions(platform, filePath))
@@ -87,7 +87,6 @@ js = do ->
     new Promise (resolve, reject) ->
       browserify(debug: true) # source maps enabled
         .transform(transformer(substitute(sub)))
-        .transform(coffeeify)
         .transform(include2require)
         .transform(imagePaths(filePath))
         .add(filePath)
@@ -96,7 +95,7 @@ js = do ->
           else resolve data.toString 'utf-8'
 
   jsDependencies = (platform, filePath) ->
-    md = mdeps(transform: [coffeeify, include2require, imagePaths(filePath)])
+    md = mdeps(transform: [include2require, imagePaths(filePath)])
     md.end filePath
     R.pPipe(collect, R.map(R.prop 'file'))(md)
 
