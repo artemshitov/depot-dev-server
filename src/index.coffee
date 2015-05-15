@@ -38,10 +38,12 @@ filesToCompile = (directory, blockFile) ->
             .reverse()
             .concat([''])
 
-    R.flip(R.chain) extensions[blockFile.extension], (ext) ->
+    files = R.flip(R.chain) extensions[blockFile.extension], (ext) ->
         withExt = blockFile.changeExtension(ext)
-        platforms.map (p) ->
-            path.join(directory, withExt.changePlatform(p).toPath())
+        platforms.map (p) -> withExt.changePlatform(p).toPath()
+
+    archived = files.map (f) -> path.join('.archive/', f)
+    files.concat(archived).map (f) -> path.join(directory, f)
 
 redirectFromBuild = (req, res) ->
     res.redirect('/' + req.path.split('/')[2..].join('/'))
