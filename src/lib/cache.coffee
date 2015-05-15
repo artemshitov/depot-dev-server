@@ -23,7 +23,7 @@ class Entry
   isValid: ->
     Promise.map @files, ({mtime, path}) ->
       R.pipeP(File.mtime, R.eq(mtime))(path)
-    .then R.every R.identity
+    .then R.all R.identity
     .catch (err) ->
       if err.cause.code == 'ENOENT' then false
       else throw err

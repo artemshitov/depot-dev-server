@@ -13,7 +13,6 @@ findP = (f) -> (xs) ->
     .then R.find(R.identity)
 
 exists = (filePath) ->
-  console.log(filePath)
   new Promise (resolve, reject) ->
     fs.exists filePath, resolve
 

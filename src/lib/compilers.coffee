@@ -52,16 +52,16 @@ less = do ->
     filename: filePath
     ieCompat: false
 
-  lessCompile = (platform, filePath, sub) ->
-    render = R.rPartial(lessRender, lessOptions(platform, filePath))
+  lessCompile = (opts, filePath) ->
+    render = R.partialRight(lessRender, lessOptions(opts.platform, filePath))
     prefix = (css) -> autoprefixer.process(css).css
-    readFile(filePath, encoding: 'utf-8').then(substitute(sub)).then(render).then(prefix)
+    readFile(filePath, encoding: 'utf-8').then(substitute(opts.substitute)).then(render).then(prefix)
 
-  lessDependencies = (platform, filePath) ->
-    parser = new lessc.Parser(lessOptions(platform, filePath))
+  lessDependencies = (opts, filePath) ->
+    parser = new lessc.Parser(lessOptions(opts.platform, filePath))
     parse = Promise.promisify(parser.parse, parser)
     getFiles = -> R.append(filePath, R.keys(parser.imports.files))
-    R.pipeP(readFile, parse, getFiles)(filePath, encoding: 'utf-8')
+    readFile(filePath, encoding: 'utf-8').then(substitute(opts.substitute)).then(parse).then(getFiles)
 
   new Compiler(lessCompile, lessDependencies)
 
@@ -83,10 +83,10 @@ js = do ->
     relPath = path.relative(blockPath, path.resolve(filePath, '..'))
     js.replace /(['"])url\((?!\/)([^'"]+)\)/g, "$1url(/#{relPath}/$2)"
 
-  jsCompile = (platform, filePath, sub) ->
+  jsCompile = (opts, filePath) ->
     new Promise (resolve, reject) ->
       browserify(debug: true) # source maps enabled
-        .transform(transformer(substitute(sub)))
+        .transform(transformer(substitute(opts.substitute)))
         .transform(include2require)
         .transform(imagePaths(filePath))
         .add(filePath)
