@@ -7,83 +7,91 @@ R         = require 'ramda'
 mime      = require './lib/mime'
 api       = require './lib/api'
 
+compilers = require './lib/compilers'
 Block     = require './lib/block'
-Compilers = require './lib/compilers'
 File      = require './lib/file'
 Cache     = require './lib/cache'
 
 
-createServer = (directory) ->
-  app = express()
-  cache = new Cache()
-  apiApp = api(directory)
+# Compile a file
+#
+# # Options
+# - platform: String (required)
+# - substitute: { from: String|RegExp, to: String } (optional)
+#
+# Returns Promise[{content: String, files: Array[String]}]
+compileFile = (opts, filePath) ->
+    compiler = switch path.extname(filePath)
+        when '.less' then compilers.less
+        when '.css' then compilers.css
+        when '.js' then compilers.js
+    compiler.run(opts, filePath)
 
-  app.use '/api/beta', apiApp
-
-  app.get '/.build/blocks.*/*/*/*', (req, res) ->
-    # This is made for relative paths in CSS to work
-    if !R.contains(path.extname(req.path), ['.css', '.js'])
-      withoutBuild = '/' + req.path.split(path.sep)[2..].join(path.sep)
-      res.redirect(withoutBuild)
-      return null
-
+filesToCompile = (blockFile) ->
     extensions =
-      css: ['less']
-      js: ['coffee', 'js']
+        css: ['less']
+        js: ['js']
 
-    extCompilers =
-      coffee: 'js'
-      js: 'js'
-      less: 'less'
+    R.flip(R.chain) extensions[blockFile.extension], (ext) ->
+        withExt = blockFile.changeExtension(ext)
+        [withExt, withExt.changePlatform('')].map (bf) ->
+            path.join(directory, bf.toPath())
 
-    # Substitution feature
-    #
-    # The server may substitute strings in the source file prior to compilation
-    # if query parameter `substitute` is present. It is useful for experimenting with
-    # global design constants
-    # Format: ...?substitute=/0.1.0/0.2.0/
-    if req.query.substitute?
-        [from, to] = req.query.substitute[1...-1].split('/')
-        substitute = {from, to}
+redirectFromBuild = (req, res) ->
+    res.redirect('/' + req.path.split('/')[2..].join('/'))
 
-    recompile = ->
-      blockFile = Block.BlockFile.fromPath(req.path)
+renderBlock = (directory, cache) -> (req, res) ->
+        # Substitution feature
+        #
+        # The server may substitute strings in the source file prior to compilation
+        # if query parameter `substitute` is present. It is useful for experimenting with
+        # global design constants
+        # Format: ...?substitute=/0.1.0/0.2.0/
+        if req.query.substitute?
+            [from, to] = req.query.substitute[1...-1].split('/')
+            substitute = {from, to}
 
-      filePaths = R.compose(R.flatten, R.map) (ext) ->
-        [
-          path.join(directory, blockFile.changeExtension(ext).toPath())
-          path.join(directory, blockFile.changeExtension(ext).changePlatform('').toPath())
-        ]
-      , extensions[blockFile.extension]
+        recompile = ->
+            blockFile = Block.BlockFile.fromPath(req.path)
+            filePaths = filesToCompile(blockFile)
+            opts =
+                platform: blockFile.platform
+                substitute: substitute
 
-      compileFile = (filePath) ->
-        compiler = extCompilers[path.extname(filePath)[1..]]
-        Compilers[compiler].run(blockFile.platform, filePath, substitute)
-          .then ({content, files}) ->
-            cache.update(req.originalUrl, new Cache.Entry(content, files))
-            res.type(mime(req.path)).send content
-          .catch (err) ->
-            console.error err
-            res.status(500).send('Error: ' + err.message)
+            File.withFirstExistent(R.partial(compileFile, opts))(filePaths)
+                .then ({content, files}) ->
+                    cache.update(req.originalUrl, new Cache.Entry(content, files))
+                    res.type(mime(req.path)).send content
+                .catch (err) ->
+                    console.error err
+                    res.status(500).send('Error: ' + err.message)
 
-      File.withFirstExistent(compileFile)(filePaths)
-        .catch (err) ->
-          console.log err
-          res.status(404).send(err.message)
-
-    if cache.has(req.originalUrl)
-      cacheEntry = cache.get(req.originalUrl)
-      cacheEntry.isValid().then (valid) ->
-        if valid
-          res.type(mime(req.path)).send(cacheEntry.content)
+        if cache.has(req.originalUrl)
+            cacheEntry = cache.get(req.originalUrl)
+            cacheEntry.isValid().then (valid) ->
+                if valid
+                    res.type(mime(req.path)).send(cacheEntry.content)
+                else
+                    recompile()
         else
-          recompile()
-    else
-      recompile()
+            recompile()
 
-  app.use express.static(directory)
-  app
+
+createServer = (directory) ->
+    app = express()
+    app.use '/api/beta', api(directory)
+
+    cache = new Cache()
+
+    app.get '/.build/blocks.*/*/*/*.(js|css)', renderBlock(directory, cache)
+
+    # This is made for relative paths in CSS to work
+    app.get '/.build/*', redirectFromBuild
+
+    app.use express.static(directory)
+    app
+
 
 module.exports = {
-  createServer
+    createServer
 }
