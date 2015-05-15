@@ -4,15 +4,16 @@ R = require 'ramda'
 
 fsStat = Promise.promisify fs.stat
 
-mtime = R.pPipe fsStat, R.prop('mtime'), R.func('getTime')
+mtime = R.pipeP fsStat, R.prop('mtime'), R.invoke('getTime')
 
 findP = (f) -> (xs) ->
   Promise
     .map(xs, f)
     .then R.zipWith((source, result) -> result && source)(xs)
-    .then R.find(R.I)
+    .then R.find(R.identity)
 
 exists = (filePath) ->
+  console.log(filePath)
   new Promise (resolve, reject) ->
     fs.exists filePath, resolve
 

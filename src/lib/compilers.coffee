@@ -61,7 +61,7 @@ less = do ->
     parser = new lessc.Parser(lessOptions(platform, filePath))
     parse = Promise.promisify(parser.parse, parser)
     getFiles = -> R.append(filePath, R.keys(parser.imports.files))
-    R.pPipe(readFile, parse, getFiles)(filePath, encoding: 'utf-8')
+    R.pipeP(readFile, parse, getFiles)(filePath, encoding: 'utf-8')
 
   new Compiler(lessCompile, lessDependencies)
 
@@ -97,7 +97,7 @@ js = do ->
   jsDependencies = (platform, filePath) ->
     md = mdeps(transform: [include2require, imagePaths(filePath)])
     md.end filePath
-    R.pPipe(collect, R.map(R.prop 'file'))(md)
+    R.pipeP(collect, R.map(R.prop 'file'))(md)
 
   new Compiler(jsCompile, jsDependencies)
 

@@ -22,8 +22,8 @@ class Entry
 
   isValid: ->
     Promise.map @files, ({mtime, path}) ->
-      R.pPipe(File.mtime, R.eq(mtime))(path)
-    .then R.every R.I
+      R.pipeP(File.mtime, R.eq(mtime))(path)
+    .then R.every R.identity
     .catch (err) ->
       if err.cause.code == 'ENOENT' then false
       else throw err

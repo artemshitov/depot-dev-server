@@ -27,15 +27,21 @@ compileFile = (opts, filePath) ->
         when '.js' then compilers.js
     compiler.run(opts, filePath)
 
-filesToCompile = (blockFile) ->
+filesToCompile = (directory, blockFile) ->
     extensions =
         css: ['less']
         js: ['js']
 
+    platforms = R.mapAccum(((acc, x) -> [acc.concat([x]), acc.concat([x])]),
+        [], blockFile.platform.split('-'))[1]
+            .map(R.join('-'))
+            .reverse()
+            .concat([''])
+
     R.flip(R.chain) extensions[blockFile.extension], (ext) ->
         withExt = blockFile.changeExtension(ext)
-        [withExt, withExt.changePlatform('')].map (bf) ->
-            path.join(directory, bf.toPath())
+        platforms.map (p) ->
+            path.join(directory, withExt.changePlatform(p).toPath())
 
 redirectFromBuild = (req, res) ->
     res.redirect('/' + req.path.split('/')[2..].join('/'))
@@ -53,7 +59,8 @@ renderBlock = (directory, cache) -> (req, res) ->
 
         recompile = ->
             blockFile = Block.BlockFile.fromPath(req.path)
-            filePaths = filesToCompile(blockFile)
+            filePaths = filesToCompile(directory, blockFile)
+
             opts =
                 platform: blockFile.platform
                 substitute: substitute

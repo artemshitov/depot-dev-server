@@ -12,7 +12,7 @@ readDirP  = Promise.promisify fs.readdir
 readFileP = Promise.promisify fs.readFile
 statP     = Promise.promisify fs.stat
 
-readJSON = R.pPipe(
+readJSON = R.pipeP(
   readFileP,
   JSON.parse
 )
@@ -31,7 +31,7 @@ isDirectory = (baseDir) -> (dirName) ->
 listDirs = (dir) ->
   readDirP(dir).filter(isDirectory dir)
 
-listVisibleDirs = R.pPipe(
+listVisibleDirs = R.pipeP(
   listDirs,
   R.reject(startsWith '.')
 )
@@ -45,7 +45,7 @@ module.exports = (directory) ->
   app.set 'json spaces', 2
 
   app.get '/libraries', (req, res) ->
-    listDirs(directory).then(R.pPipe(
+    listDirs(directory).then(R.pipeP(
       R.filter(R.match /blocks\.(\w+)/),
       R.map(R.replace('blocks.', '')),
       R.map(R.createMapEntry 'name')))
@@ -67,11 +67,11 @@ module.exports = (directory) ->
     descrPromise = readJSON(descrPath)
 
     blocksPromise = readDirP(depsDir)
-      .then(R.pPipe(
+      .then(R.pipeP(
         R.filter(endsWith('.json')),
         R.filter(startsWith(req.params.lib))
       )).map (filename) ->
-        readJSON(path.resolve(depsDir, filename)).then R.pPipe(
+        readJSON(path.resolve(depsDir, filename)).then R.pipeP(
           R.omit(['name', 'version']),
           R.assoc('version', filename.split('-')[-1..][0].split('.')[..-2].join('.'))
         )
