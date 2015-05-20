@@ -4,7 +4,7 @@ R = require 'ramda'
 
 fsStat = Promise.promisify fs.stat
 
-mtime = R.pipeP fsStat, R.prop('mtime'), R.invoke('getTime')
+mtime = R.pipeP(fsStat, R.prop('mtime'), R.invoke('getTime', []))
 
 findP = (f) -> (xs) ->
   Promise
