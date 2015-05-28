@@ -1,16 +1,16 @@
-fs         = require 'fs'
-path       = require 'path'
-lessc      = require 'less'
+fs = require 'fs'
+path = require 'path'
+lessc = require 'less'
 browserify = require 'browserify'
-Promise    = require 'bluebird'
-mdeps      = require 'module-deps'
-collect    = Promise.promisify(require 'collect-stream')
-through    = require 'through'
-R          = require 'ramda'
-autoprefixer  = require 'autoprefixer-core'
+Promise = require 'bluebird'
+mdeps = require 'module-deps'
+collect = Promise.promisify(require 'collect-stream')
+through = require 'through'
+R = require 'ramda'
+autoprefixer = require 'autoprefixer-core'
 
 Block = require './block'
-File  = require './file'
+File = require './file'
 
 readFile = Promise.promisify fs.readFile
 
@@ -23,86 +23,86 @@ substitute = (sub) -> (str) ->
 
 
 class Compiler
-  constructor: (@compileFn, @depsFn) ->
-  run: ->
-    Promise.all([
-      R.apply(@compileFn, arguments),
-      R.apply(@depsFn, arguments).map (path) ->
-        File.mtime(path).then (mtime) ->
-          path:  path
-          mtime: mtime
-    ]).then R.zipObj(['content', 'files'])
+    constructor: (@compileFn, @depsFn) ->
+    run: ->
+        Promise.all([
+            R.apply(@compileFn, arguments),
+            R.apply(@depsFn, arguments).map (path) ->
+                File.mtime(path).then (mtime) ->
+                    path:    path
+                    mtime: mtime
+        ]).then R.zipObj(['content', 'files'])
 
 less = do ->
-  lessRender = Promise.promisify(lessc.render)
+    lessRender = Promise.promisify(lessc.render)
 
-  lessOptions = (platform, filePath) ->
-    sourceMap:
-      sourceMapFileInline: true
-    paths: [
-      # version directory
-      path.dirname filePath
+    lessOptions = (platform, filePath) ->
+        sourceMap:
+            sourceMapFileInline: true
+        paths: [
+            # version directory
+            path.dirname filePath
 
-      # library config directory
-      path.join(path.resolve(filePath, '../../../'), 'const', platform)
+            # library config directory
+            path.join(path.resolve(filePath, '../../../'), 'const', platform)
 
-      # project config directory
-      path.join(path.resolve(filePath, '../../../../'), 'const', platform)
-    ]
-    filename: filePath
-    ieCompat: false
+            # project config directory
+            path.join(path.resolve(filePath, '../../../../'), 'const', platform)
+        ]
+        filename: filePath
+        ieCompat: false
 
-  lessCompile = (opts, filePath) ->
-    render = R.partialRight(lessRender, lessOptions(opts.platform, filePath))
-    prefix = (css) -> autoprefixer.process(css).css
-    readFile(filePath, encoding: 'utf-8').then(substitute(opts.substitute)).then(render).then(prefix)
+    lessCompile = (opts, filePath) ->
+        render = R.partialRight(lessRender, lessOptions(opts.platform, filePath))
+        prefix = (css) -> autoprefixer.process(css).css
+        readFile(filePath, encoding: 'utf-8').then(substitute(opts.substitute)).then(render).then(prefix)
 
-  lessDependencies = (opts, filePath) ->
-    parser = new lessc.Parser(lessOptions(opts.platform, filePath))
-    parse = Promise.promisify(parser.parse, parser)
-    getFiles = -> R.append(filePath, R.keys(parser.imports.files))
-    readFile(filePath, encoding: 'utf-8').then(substitute(opts.substitute)).then(parse).then(getFiles)
+    lessDependencies = (opts, filePath) ->
+        parser = new lessc.Parser(lessOptions(opts.platform, filePath))
+        parse = Promise.promisify(parser.parse, parser)
+        getFiles = -> R.append(filePath, R.keys(parser.imports.files))
+        readFile(filePath, encoding: 'utf-8').then(substitute(opts.substitute)).then(parse).then(getFiles)
 
-  new Compiler(lessCompile, lessDependencies)
+    new Compiler(lessCompile, lessDependencies)
 
 
 js = do ->
-  transformer = (f) -> () ->
-    buffer = ''
-    write  = (data) -> buffer += data
-    end    = ->
-      @queue f(buffer)
-      @queue null
-    through write, end
+    transformer = (f) -> () ->
+        buffer = ''
+        write = (data) -> buffer += data
+        end = ->
+            @queue f(buffer)
+            @queue null
+        through write, end
 
-  include2require = transformer (js) ->
-    js.replace /\/\/= include (.+)/g, 'require(\'./$1\');'
+    include2require = transformer (js) ->
+        js.replace /\/\/= include (.+)/g, 'require(\'./$1\');'
 
-  imagePaths = (filePath) -> transformer (js) ->
-    blockPath = path.resolve(filePath, '../../../..')
-    relPath = path.relative(blockPath, path.resolve(filePath, '..'))
-    js.replace /(['"])url\((?!\/)([^'"]+)\)/g, "$1url(/#{relPath}/$2)"
+    imagePaths = (filePath) -> transformer (js) ->
+        blockPath = path.resolve(filePath, '../../../..')
+        relPath = path.relative(blockPath, path.resolve(filePath, '..'))
+        js.replace /(['"])url\((?!\/)([^'"]+)\)/g, "$1url(/#{relPath}/$2)"
 
-  jsCompile = (opts, filePath) ->
-    new Promise (resolve, reject) ->
-      browserify(debug: true) # source maps enabled
-        .transform(transformer(substitute(opts.substitute)))
-        .transform(include2require)
-        .transform(imagePaths(filePath))
-        .add(filePath)
-        .bundle (err, data) ->
-          if err? then reject err
-          else resolve data.toString 'utf-8'
+    jsCompile = (opts, filePath) ->
+        new Promise (resolve, reject) ->
+            browserify(debug: true) # source maps enabled
+                .transform(transformer(substitute(opts.substitute)))
+                .transform(include2require)
+                .transform(imagePaths(filePath))
+                .add(filePath)
+                .bundle (err, data) ->
+                    if err? then reject err
+                    else resolve data.toString 'utf-8'
 
-  jsDependencies = (platform, filePath) ->
-    md = mdeps(transform: [include2require, imagePaths(filePath)])
-    md.end filePath
-    R.pipeP(collect, R.map(R.prop 'file'))(md)
+    jsDependencies = (platform, filePath) ->
+        md = mdeps(transform: [include2require, imagePaths(filePath)])
+        md.end filePath
+        R.pipeP(collect, R.map(R.prop 'file'))(md)
 
-  new Compiler(jsCompile, jsDependencies)
+    new Compiler(jsCompile, jsDependencies)
 
 
 module.exports = {
-  less
-  js
+    less
+    js
 }
