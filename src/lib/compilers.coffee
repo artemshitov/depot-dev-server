@@ -56,7 +56,7 @@ less = do ->
             .then (input) ->
                 lessc.render(input, lessOptions(opts.platform, filePath))
             .then (out) ->
-                content: out.css # autoprefixer.process(out.css).css
+                content: autoprefixer.process(out.css).css
                 files: out.imports
 
     new Compiler(lessCompile)
