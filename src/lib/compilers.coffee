@@ -60,7 +60,7 @@ less = do ->
                 postcss([autoprefixer]).process(out.css)
                     .then (result) ->
                         content: result.css
-                        files: out.imports
+                        files: [filePath].concat(out.imports)
 
     new Compiler(lessCompile)
 
