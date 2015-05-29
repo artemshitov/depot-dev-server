@@ -6,6 +6,7 @@ Promise = require 'bluebird'
 through = require 'through'
 R = require 'ramda'
 autoprefixer = require 'autoprefixer-core'
+postcss = require 'postcss'
 
 Block = require './block'
 File = require './file'
@@ -56,8 +57,10 @@ less = do ->
             .then (input) ->
                 lessc.render(input, lessOptions(opts.platform, filePath))
             .then (out) ->
-                content: autoprefixer.process(out.css).css
-                files: out.imports
+                postcss([autoprefixer]).process(out.css)
+                    .then (result) ->
+                        content: result.css
+                        files: out.imports
 
     new Compiler(lessCompile)
 
