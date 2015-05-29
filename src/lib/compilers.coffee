@@ -23,15 +23,16 @@ substitute = (sub) -> (str) ->
 
 
 class Compiler
-    constructor: (@compileFn, @depsFn) ->
+    constructor: (@compileFn) ->
     run: ->
-        Promise.all([
-            R.apply(@compileFn, arguments),
-            R.apply(@depsFn, arguments).map (path) ->
+        @compileFn.apply(@, arguments).then (output) ->
+            Promise.map output.files, (path) ->
                 File.mtime(path).then (mtime) ->
-                    path:    path
+                    path: path
                     mtime: mtime
-        ]).then R.zipObj(['content', 'files'])
+            .then (files) ->
+                content: output.content
+                files: files
 
 less = do ->
     lessRender = Promise.promisify(lessc.render)
@@ -53,17 +54,14 @@ less = do ->
         ieCompat: false
 
     lessCompile = (opts, filePath) ->
-        render = R.partialRight(lessRender, lessOptions(opts.platform, filePath))
-        prefix = (css) -> autoprefixer.process(css).css
-        readFile(filePath, encoding: 'utf-8').then(substitute(opts.substitute)).then(render).then(prefix)
+        readFile(filePath, encoding: 'utf-8').then(substitute(opts.substitute))
+            .then (input) ->
+                lessc.render(input, lessOptions(opts.platform, filePath))
+            .then (out) ->
+                content: out.css # autoprefixer.process(out.css).css
+                files: out.imports
 
-    lessDependencies = (opts, filePath) ->
-        parser = new lessc.Parser(lessOptions(opts.platform, filePath))
-        parse = Promise.promisify(parser.parse, parser)
-        getFiles = -> R.append(filePath, R.keys(parser.imports.files))
-        readFile(filePath, encoding: 'utf-8').then(substitute(opts.substitute)).then(parse).then(getFiles)
-
-    new Compiler(lessCompile, lessDependencies)
+    new Compiler(lessCompile)
 
 
 js = do ->
@@ -84,22 +82,23 @@ js = do ->
         js.replace /(['"])url\((?!\/)([^'"]+)\)/g, "$1url(/#{relPath}/$2)"
 
     jsCompile = (opts, filePath) ->
+        files = []
         new Promise (resolve, reject) ->
             browserify(debug: true) # source maps enabled
                 .transform(transformer(substitute(opts.substitute)))
                 .transform(include2require)
                 .transform(imagePaths(filePath))
                 .add(filePath)
+                .on 'file', (file) ->
+                    files.push(file)
                 .bundle (err, data) ->
                     if err? then reject err
-                    else resolve data.toString 'utf-8'
+                    else
+                        resolve
+                            content: data.toString('utf-8')
+                            files: files
 
-    jsDependencies = (platform, filePath) ->
-        md = mdeps(transform: [include2require, imagePaths(filePath)])
-        md.end filePath
-        R.pipeP(collect, R.map(R.prop 'file'))(md)
-
-    new Compiler(jsCompile, jsDependencies)
+    new Compiler(jsCompile)
 
 
 module.exports = {
