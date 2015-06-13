@@ -49,41 +49,41 @@ redirectFromBuild = (req, res) ->
     res.redirect('/' + req.path.split('/')[2..].join('/'))
 
 renderBlock = (directory, cache) -> (req, res) ->
-        # Substitution feature
-        #
-        # The server may substitute strings in the source file prior to compilation
-        # if query parameter `substitute` is present. It is useful for experimenting with
-        # global design constants
-        # Format: ...?substitute=/0.1.0/0.2.0/
-        if req.query.substitute?
-            [from, to] = req.query.substitute[1...-1].split('/')
-            substitute = {from, to}
+    # Substitution feature
+    #
+    # The server may substitute strings in the source file prior to compilation
+    # if query parameter `substitute` is present. It is useful for experimenting with
+    # global design constants
+    # Format: ...?substitute=/0.1.0/0.2.0/
+    if req.query.substitute?
+        [from, to] = req.query.substitute[1...-1].split('/')
+        substitute = {from, to}
 
-        recompile = ->
-            blockFile = Block.BlockFile.fromPath(req.path)
-            filePaths = filesToCompile(directory, blockFile)
+    recompile = ->
+        blockFile = Block.BlockFile.fromPath(req.path)
+        filePaths = filesToCompile(directory, blockFile)
 
-            opts =
-                platform: blockFile.platform
-                substitute: substitute
+        opts =
+            platform: blockFile.platform
+            substitute: substitute
 
-            File.withFirstExistent(R.partial(compileFile, opts))(filePaths)
-                .then ({content, files}) ->
-                    cache.update(req.originalUrl, new Cache.Entry(content, files))
-                    res.type(mime(req.path)).send content
-                .catch (err) ->
-                    console.error err
-                    res.status(500).send('Error: ' + err.message)
+        File.withFirstExistent(R.partial(compileFile, opts))(filePaths)
+            .then ({content, files}) ->
+                cache.update(req.originalUrl, new Cache.Entry(content, files))
+                res.type(mime(req.path)).send content
+            .catch (err) ->
+                console.error err
+                res.status(500).send('Error: ' + err.message)
 
-        if cache.has(req.originalUrl)
-            cacheEntry = cache.get(req.originalUrl)
-            cacheEntry.isValid().then (valid) ->
-                if valid
-                    res.type(mime(req.path)).send(cacheEntry.content)
-                else
-                    recompile()
-        else
-            recompile()
+    if cache.has(req.originalUrl)
+        cacheEntry = cache.get(req.originalUrl)
+        cacheEntry.isValid().then (valid) ->
+            if valid
+                res.type(mime(req.path)).send(cacheEntry.content)
+            else
+                recompile()
+    else
+        recompile()
 
 
 createServer = (directory) ->
