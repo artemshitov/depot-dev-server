@@ -74,9 +74,6 @@ js = do ->
             @queue null
         through write, end
 
-    include2require = transformer (js) ->
-        js.replace /\/\/= include (.+)/g, 'require(\'./$1\');'
-
     imagePaths = (filePath) -> transformer (js) ->
         blockPath = path.resolve(filePath, '../../../..')
         relPath = path.relative(blockPath, path.resolve(filePath, '..'))
@@ -87,7 +84,6 @@ js = do ->
         new Promise (resolve, reject) ->
             browserify(debug: true) # source maps enabled
                 .transform(transformer(substitute(opts.substitute)))
-                .transform(include2require)
                 .transform(imagePaths(filePath))
                 .add(filePath)
                 .on 'file', (file) ->
